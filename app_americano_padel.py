@@ -29,40 +29,45 @@ if len(jugadores) == num_jugadores:
     for pareja in parejas:
         st.markdown(f"- {pareja}")
 
-    partidos = list(combinations(parejas, 2))
+    # Generar rondas solo si no existen en session_state
+    if "rondas_con_pistas" not in st.session_state:
+        partidos = list(combinations(parejas, 2))
+        rondas = []
+        ronda_actual = []
+        ocupadas = set()
 
-    rondas = []
-    ronda_actual = []
-    ocupadas = set()
+        for partido in partidos:
+            p1, p2 = partido
+            if p1 not in ocupadas and p2 not in ocupadas:
+                ronda_actual.append(partido)
+                ocupadas.update([p1, p2])
+                if len(ronda_actual) == pistas:
+                    rondas.append(ronda_actual)
+                    ronda_actual = []
+                    ocupadas = set()
+        if ronda_actual:
+            rondas.append(ronda_actual)
 
-    for partido in partidos:
-        p1, p2 = partido
-        if p1 not in ocupadas and p2 not in ocupadas:
-            ronda_actual.append(partido)
-            ocupadas.update([p1, p2])
-            if len(ronda_actual) == pistas:
-                rondas.append(ronda_actual)
-                ronda_actual = []
-                ocupadas = set()
-    if ronda_actual:
-        rondas.append(ronda_actual)
+        rondas_con_pistas = []
+        for ronda in rondas:
+            ronda_con_pistas = []
+            for i, partido in enumerate(ronda):
+                pista = i + 1
+                ronda_con_pistas.append((partido, pista))
+            rondas_con_pistas.append(ronda_con_pistas)
 
-    rondas_con_pistas = []
-    for ronda in rondas:
-        ronda_con_pistas = []
-        for i, partido in enumerate(ronda):
-            pista = i + 1
-            ronda_con_pistas.append((partido, pista))
-        rondas_con_pistas.append(ronda_con_pistas)
+        st.session_state.rondas_con_pistas = rondas_con_pistas
+        st.session_state.parejas = parejas
+        st.session_state.resultados = {}
 
-    resultados = {}
-    ronda_labels = ["🏆 Clasificación"] + [f"R{i+1}" for i in range(len(rondas_con_pistas))]
+    # Mostrar selector de pestañas
+    ronda_labels = ["\U0001F3C6 Clasificación"] + [f"R{i+1}" for i in range(len(st.session_state.rondas_con_pistas))]
     selected_tab = st.radio("Selecciona una ronda", ronda_labels, horizontal=True)
 
-    if selected_tab == "🏆 Clasificación":
+    if selected_tab == "\U0001F3C6 Clasificación":
         st.header("Tabla de posiciones")
-        tabla = {p: {"Games Ganados": 0, "Games Recibidos": 0, "G": 0, "E": 0, "P": 0} for p in parejas}
-        for (p1, p2), (s1, s2) in resultados.items():
+        tabla = {p: {"Games Ganados": 0, "Games Recibidos": 0, "G": 0, "E": 0, "P": 0} for p in st.session_state.parejas}
+        for (p1, p2), (s1, s2) in st.session_state.resultados.items():
             tabla[p1]["Games Ganados"] += s1
             tabla[p1]["Games Recibidos"] += s2
             tabla[p2]["Games Ganados"] += s2
@@ -108,7 +113,7 @@ if len(jugadores) == num_jugadores:
     else:
         ronda_idx = int(selected_tab[1:]) - 1
         st.header(f"{selected_tab} - Resultados")
-        for j, ((p1, p2), pista_num) in enumerate(rondas_con_pistas[ronda_idx]):
+        for j, ((p1, p2), pista_num) in enumerate(st.session_state.rondas_con_pistas[ronda_idx]):
             st.markdown(f"#### Pista {pista_num}")
             col1, col2, col3 = st.columns([4, 1, 4])
             with col1:
@@ -117,6 +122,6 @@ if len(jugadores) == num_jugadores:
                 st.markdown("<h5 style='text-align: center;'>VS</h5>", unsafe_allow_html=True)
             with col3:
                 s2 = st.number_input(f"{p2}", min_value=0, max_value=8, key=f"{ronda_idx}_{j}_score2")
-            resultados[(p1, p2)] = (s1, s2)
+            st.session_state.resultados[(p1, p2)] = (s1, s2)
 else:
     st.warning("Por favor, ingresa todos los jugadores para continuar.")
