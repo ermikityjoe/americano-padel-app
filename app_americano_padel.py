@@ -3,6 +3,7 @@ import streamlit as st
 import pandas as pd
 from itertools import combinations
 from fpdf import FPDF
+from io import BytesIO
 
 st.set_page_config(page_title="Americano Pádel", layout="wide")
 
@@ -12,7 +13,7 @@ nombre_torneo = st.sidebar.text_input("Nombre del Americano", "Domingo 30 de mar
 num_parejas = st.sidebar.number_input("Cantidad de parejas", min_value=2, max_value=20, value=6, step=1)
 pistas = st.sidebar.number_input("Cantidad de pistas disponibles", min_value=1, max_value=10, value=3, step=1)
 
-st.title(f"Torneo: {nombre_torneo}")
+st.markdown(f"## Torneo: {nombre_torneo}")
 
 num_jugadores = num_parejas * 2
 jugadores = []
@@ -24,40 +25,25 @@ with st.expander("Paso 2: Ingresar nombres de jugadores"):
             jugadores.append(jugador)
 
 if len(jugadores) == num_jugadores:
-    # Asignar parejas en orden
     parejas = [f"{jugadores[i]} / {jugadores[i+1]}" for i in range(0, num_jugadores, 2)]
-
     st.success("Parejas asignadas:")
-    st.write(parejas)
+    for pareja in parejas:
+        st.markdown(f"- {pareja}")
 
-    # Generar partidos todos contra todos
     partidos = list(combinations(parejas, 2))
     total_rondas = (len(partidos) + pistas - 1) // pistas
     rondas = [[] for _ in range(total_rondas)]
 
-    # Asignar partidos a rondas y pistas
     for idx, partido in enumerate(partidos):
         ronda_index = idx // pistas
-        rondas[ronda_index].append((partido, (idx % pistas) + 1))  # (parejas, pista)
+        rondas[ronda_index].append((partido, (idx % pistas) + 1))
 
     resultados = {}
 
-    tabs = st.tabs([f"Ronda {i+1}" for i in range(total_rondas)] + ["Clasificación"])
+    ronda_labels = ["🏆 Clasificación"] + [f"R{i+1}" for i in range(total_rondas)]
+    selected_tab = st.radio("Selecciona una ronda", ronda_labels, horizontal=True)
 
-    for i, tab in enumerate(tabs[:-1]):
-        with tab:
-            st.header(f"Ronda {i+1}")
-            for j, ((p1, p2), pista_num) in enumerate(rondas[i]):
-                st.markdown(f"### Pista {pista_num}: {p1} ⬅️ vs ➡️ {p2}")
-                col1, col2 = st.columns([1, 1])
-                with col1:
-                    s1 = st.number_input("Score", min_value=0, max_value=8, key=f"{i}_{j}_score1")
-                with col2:
-                    s2 = st.number_input("Score", min_value=0, max_value=8, key=f"{i}_{j}_score2")
-                resultados[(p1, p2)] = (s1, s2)
-
-    # Clasificación
-    with tabs[-1]:
+    if selected_tab == "🏆 Clasificación":
         st.header("Tabla de posiciones")
         tabla = {p: {"Games Ganados": 0, "Games Recibidos": 0, "G": 0, "E": 0, "P": 0} for p in parejas}
         for (p1, p2), (s1, s2) in resultados.items():
@@ -81,7 +67,6 @@ if len(jugadores) == num_jugadores:
 
         st.dataframe(df_tabla)
 
-        # Exportar resultados
         if st.button("Descargar clasificación en PDF"):
             pdf = FPDF()
             pdf.add_page()
@@ -91,9 +76,30 @@ if len(jugadores) == num_jugadores:
             for i, row in df_tabla.iterrows():
                 texto = f"{i}: {row['Games Ganados']} GF, {row['Games Recibidos']} GC, G/E/P: {row['G']}/{row['E']}/{row['P']}"
                 pdf.cell(200, 10, txt=texto, ln=True)
-            pdf_output = f"/mnt/data/{nombre_torneo.replace(' ', '_')}_resultados.pdf"
-            pdf.output(pdf_output)
+
+            pdf_buffer = BytesIO()
+            pdf.output(pdf_buffer)
+            pdf_buffer.seek(0)
+
             st.success("PDF generado correctamente")
-            st.markdown(f"[Descargar PDF]({pdf_output})")
+            st.download_button(
+                label="Descargar PDF",
+                data=pdf_buffer,
+                file_name=f"{nombre_torneo.replace(' ', '_')}_resultados.pdf",
+                mime="application/pdf"
+            )
+    else:
+        ronda_idx = int(selected_tab[1:]) - 1
+        st.header(f"{selected_tab} - Resultados")
+        for j, ((p1, p2), pista_num) in enumerate(rondas[ronda_idx]):
+            st.markdown(f"#### Pista {pista_num}")
+            col1, col2, col3 = st.columns([4, 1, 4])
+            with col1:
+                s1 = st.number_input(f"{p1}", min_value=0, max_value=8, key=f"{ronda_idx}_{j}_score1")
+            with col2:
+                st.markdown("<h5 style='text-align: center;'>VS</h5>", unsafe_allow_html=True)
+            with col3:
+                s2 = st.number_input(f"{p2}", min_value=0, max_value=8, key=f"{ronda_idx}_{j}_score2")
+            resultados[(p1, p2)] = (s1, s2)
 else:
     st.warning("Por favor, ingresa todos los jugadores para continuar.")
