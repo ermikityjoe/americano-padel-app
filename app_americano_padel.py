@@ -28,8 +28,23 @@ with st.expander("Paso 2: Ingresar nombres de jugadores"):
 if len(jugadores) == num_jugadores and not st.session_state.get("torneo_creado"):
     if st.button("🎾 Crear Torneo"):
         parejas = [f"{jugadores[i]} / {jugadores[i+1]}" for i in range(0, num_jugadores, 2)]
+
         partidos = list(combinations(parejas, 2))
+        partidos_pendientes = partidos.copy()
         rondas = []
+
+        while partidos_pendientes:
+            ronda_actual = []
+            usados = set()
+            for partido in partidos_pendientes[:]:
+                p1, p2 = partido
+                if p1 not in usados and p2 not in usados:
+                    ronda_actual.append(partido)
+                    usados.update([p1, p2])
+                    partidos_pendientes.remove(partido)
+                    if len(ronda_actual) == pistas:
+                        break
+
         ronda_actual = []
         ocupadas = set()
 
