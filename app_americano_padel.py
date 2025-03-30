@@ -15,7 +15,7 @@ pistas = st.sidebar.number_input("Cantidad de pistas disponibles", min_value=1, 
 st.markdown(f"## Torneo: {nombre_torneo}")
 
 num_jugadores = num_parejas * 2
-jugadores = []
+jugadores = st.session_state.get('jugadores', [])
 
 with st.expander("Paso 2: Ingresar nombres de jugadores"):
     for i in range(num_jugadores):
@@ -29,6 +29,7 @@ if len(jugadores) == num_jugadores:
         parejas = [f"{jugadores[i]} / {jugadores[i+1]}" for i in range(0, num_jugadores, 2)]
         st.session_state.parejas = parejas
         st.session_state.resultados = {}
+        st.session_state.jugadores = jugadores
 
         partidos = list(combinations(parejas, 2))
         rondas = []
