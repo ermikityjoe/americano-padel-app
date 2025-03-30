@@ -50,11 +50,12 @@ if len(jugadores) == num_jugadores:
         with tab:
             st.header(f"Ronda {i+1}")
             for j, (p1, p2) in enumerate(rondas[i]):
-                col1, col2 = st.columns(2)
+                st.markdown(f"### {p1} ⬅️ vs ➡️ {p2}")
+                col1, col2 = st.columns([1, 1])
                 with col1:
-                    s1 = st.number_input(f"{p1} (Games)", min_value=0, max_value=8, key=f"{i}_{j}_1")
+                    s1 = st.number_input("Score", min_value=0, max_value=8, key=f"{i}_{j}_score1")
                 with col2:
-                    s2 = st.number_input(f"{p2} (Games)", min_value=0, max_value=8, key=f"{i}_{j}_2")
+                    s2 = st.number_input("Score", min_value=0, max_value=8, key=f"{i}_{j}_score2")
                 resultados[(p1, p2)] = (s1, s2)
 
     # Clasificación
