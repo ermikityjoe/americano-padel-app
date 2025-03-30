@@ -4,9 +4,7 @@ import pandas as pd
 from itertools import combinations
 from fpdf import FPDF
 
-st.set_page_config(page_title="Torneo Americano Pádel", layout="wide")
-
-st.title("Torneo Americano Mixto - Pádel")
+st.set_page_config(page_title="Americano Pádel", layout="wide")
 
 # Paso 1: Información inicial del torneo
 st.sidebar.header("Configuración del Torneo")
@@ -14,7 +12,7 @@ nombre_torneo = st.sidebar.text_input("Nombre del Americano", "Domingo 30 de mar
 num_parejas = st.sidebar.number_input("Cantidad de parejas", min_value=2, max_value=20, value=6, step=1)
 pistas = st.sidebar.number_input("Cantidad de pistas disponibles", min_value=1, max_value=10, value=3, step=1)
 
-st.subheader(nombre_torneo)
+st.title(f"Torneo: {nombre_torneo}")
 
 num_jugadores = num_parejas * 2
 jugadores = []
@@ -37,10 +35,10 @@ if len(jugadores) == num_jugadores:
     total_rondas = (len(partidos) + pistas - 1) // pistas
     rondas = [[] for _ in range(total_rondas)]
 
-    # Asignar partidos a rondas
+    # Asignar partidos a rondas y pistas
     for idx, partido in enumerate(partidos):
-        ronda_index = idx % total_rondas
-        rondas[ronda_index].append(partido)
+        ronda_index = idx // pistas
+        rondas[ronda_index].append((partido, (idx % pistas) + 1))  # (parejas, pista)
 
     resultados = {}
 
@@ -49,8 +47,8 @@ if len(jugadores) == num_jugadores:
     for i, tab in enumerate(tabs[:-1]):
         with tab:
             st.header(f"Ronda {i+1}")
-            for j, (p1, p2) in enumerate(rondas[i]):
-                st.markdown(f"### {p1} ⬅️ vs ➡️ {p2}")
+            for j, ((p1, p2), pista_num) in enumerate(rondas[i]):
+                st.markdown(f"### Pista {pista_num}: {p1} ⬅️ vs ➡️ {p2}")
                 col1, col2 = st.columns([1, 1])
                 with col1:
                     s1 = st.number_input("Score", min_value=0, max_value=8, key=f"{i}_{j}_score1")
@@ -88,7 +86,7 @@ if len(jugadores) == num_jugadores:
             pdf = FPDF()
             pdf.add_page()
             pdf.set_font("Arial", size=12)
-            pdf.cell(200, 10, txt=f"Resultados - {nombre_torneo}", ln=True, align="C")
+            pdf.cell(200, 10, txt=f"Resultados del Torneo - {nombre_torneo}", ln=True, align="C")
             pdf.ln(10)
             for i, row in df_tabla.iterrows():
                 texto = f"{i}: {row['Games Ganados']} GF, {row['Games Recibidos']} GC, G/E/P: {row['G']}/{row['E']}/{row['P']}"
