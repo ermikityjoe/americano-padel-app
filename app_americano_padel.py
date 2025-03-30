@@ -121,7 +121,9 @@ if st.session_state.get("torneo_creado"):
     else:
         ronda_idx = int(selected_tab[1:]) - 1
         st.header(f"{selected_tab} - Resultados")
-        for j, ((p1, p2), pista_num) in enumerate(st.session_state.rondas_con_pistas[ronda_idx]):
+        ronda_mostrar = st.session_state.rondas_con_pistas[ronda_idx]
+        for j, (partido, pista_num) in enumerate(ronda_mostrar):
+            p1, p2 = partido
             st.markdown(f"#### Pista {pista_num}")
             col1, col2, col3 = st.columns([4, 1, 4])
             with col1:
