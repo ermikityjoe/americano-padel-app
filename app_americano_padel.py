@@ -15,22 +15,19 @@ pistas = st.sidebar.number_input("Cantidad de pistas disponibles", min_value=1, 
 st.markdown(f"## Torneo: {nombre_torneo}")
 
 num_jugadores = num_parejas * 2
-jugadores = st.session_state.get('jugadores', [])
+jugadores = st.session_state.get("jugadores", [])
 
 with st.expander("Paso 2: Ingresar nombres de jugadores"):
     for i in range(num_jugadores):
         jugador = st.text_input(f"Jugador {i+1}", key=f"jugador_{i}")
-        if jugador:
-            jugadores.append(jugador)
+        if len(st.session_state.get(f"jugador_{i}", "")) > 0:
+            if len(jugadores) < num_jugadores:
+                jugadores.append(st.session_state[f"jugador_{i}"])
 
-# Botón para crear el torneo
-if len(jugadores) == num_jugadores:
+# Botón para crear torneo
+if len(jugadores) == num_jugadores and not st.session_state.get("torneo_creado"):
     if st.button("🎾 Crear Torneo"):
         parejas = [f"{jugadores[i]} / {jugadores[i+1]}" for i in range(0, num_jugadores, 2)]
-        st.session_state.parejas = parejas
-        st.session_state.resultados = {}
-        st.session_state.jugadores = jugadores
-
         partidos = list(combinations(parejas, 2))
         rondas = []
         ronda_actual = []
@@ -56,19 +53,22 @@ if len(jugadores) == num_jugadores:
                 ronda_con_pistas.append((partido, pista))
             rondas_con_pistas.append(ronda_con_pistas)
 
+        st.session_state.jugadores = jugadores
+        st.session_state.parejas = parejas
+        st.session_state.resultados = {}
         st.session_state.rondas_con_pistas = rondas_con_pistas
-        st.rerun()
+        st.session_state.torneo_creado = True
 
-# Mostrar rondas solo si ya se generó el torneo
-if "rondas_con_pistas" in st.session_state and "parejas" in st.session_state:
+# Mostrar torneo
+if st.session_state.get("torneo_creado"):
     st.success("Parejas asignadas:")
     for pareja in st.session_state.parejas:
         st.markdown(f"- {pareja}")
 
-    ronda_labels = ["\U0001F3C6 Clasificación"] + [f"R{i+1}" for i in range(len(st.session_state.rondas_con_pistas))]
+    ronda_labels = ["🏆 Clasificación"] + [f"R{i+1}" for i in range(len(st.session_state.rondas_con_pistas))]
     selected_tab = st.radio("Selecciona una ronda", ronda_labels, horizontal=True)
 
-    if selected_tab == "\U0001F3C6 Clasificación":
+    if selected_tab == "🏆 Clasificación":
         st.header("Tabla de posiciones")
         tabla = {p: {"Games Ganados": 0, "Games Recibidos": 0, "G": 0, "E": 0, "P": 0} for p in st.session_state.parejas}
         for (p1, p2), (s1, s2) in st.session_state.resultados.items():
