@@ -1,35 +1,28 @@
 
 import streamlit as st
 import pandas as pd
-from itertools import combinations, permutations
+from itertools import combinations
 from fpdf import FPDF
 from io import BytesIO
+import random
 
-def generar_rondas_sin_repeticion(parejas, pistas):
-    partidos = list(combinations(parejas, 2))
-    total_partidos = len(partidos)
-    partidos_por_ronda = pistas
-    max_rondas = total_partidos // partidos_por_ronda + (1 if total_partidos % partidos_por_ronda else 0)
+def generar_rounds_fijos(parejas, pistas):
+    partidos_posibles = list(combinations(parejas, 2))
+    random.shuffle(partidos_posibles)
 
     rondas = []
-    usados = set()
-
-    while len(usados) < total_partidos:
+    while partidos_posibles:
         ronda = []
-        usadas_en_ronda = set()
-        for p1, p2 in partidos:
-            if (p1, p2) not in usados and (p2, p1) not in usados:
-                if p1 not in usadas_en_ronda and p2 not in usadas_en_ronda:
-                    ronda.append((p1, p2))
-                    usadas_en_ronda.update([p1, p2])
-                    usados.add((p1, p2))
-                    if len(ronda) == pistas:
-                        break
-        if ronda:
-            rondas.append(ronda)
-        else:
-            break
-
+        en_ronda = set()
+        restantes = partidos_posibles[:]
+        for p in restantes:
+            if p[0] not in en_ronda and p[1] not in en_ronda:
+                ronda.append(p)
+                en_ronda.update(p)
+                partidos_posibles.remove(p)
+            if len(ronda) == pistas:
+                break
+        rondas.append(ronda)
     return rondas
 
 # App
@@ -53,7 +46,7 @@ with st.expander("Paso 2: Ingresar nombres de jugadores"):
 if len(jugadores) == num_jugadores and not st.session_state.get("torneo_creado"):
     if st.button("🎾 Crear Torneo"):
         parejas = [f"{jugadores[i]} / {jugadores[i+1]}" for i in range(0, num_jugadores, 2)]
-        rondas = generar_rondas_sin_repeticion(parejas, pistas)
+        rondas = generar_rounds_fijos(parejas, pistas)
 
         rondas_con_pistas = []
         for ronda in rondas:
