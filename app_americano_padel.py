@@ -23,14 +23,13 @@ with st.expander("Paso 2: Ingresar nombres de jugadores"):
         if jugador:
             jugadores.append(jugador)
 
+# Botón para crear el torneo
 if len(jugadores) == num_jugadores:
-    parejas = [f"{jugadores[i]} / {jugadores[i+1]}" for i in range(0, num_jugadores, 2)]
-    st.success("Parejas asignadas:")
-    for pareja in parejas:
-        st.markdown(f"- {pareja}")
+    if st.button("🎾 Crear Torneo"):
+        parejas = [f"{jugadores[i]} / {jugadores[i+1]}" for i in range(0, num_jugadores, 2)]
+        st.session_state.parejas = parejas
+        st.session_state.resultados = {}
 
-    # Generar rondas solo si no existen en session_state
-    if "rondas_con_pistas" not in st.session_state:
         partidos = list(combinations(parejas, 2))
         rondas = []
         ronda_actual = []
@@ -57,10 +56,14 @@ if len(jugadores) == num_jugadores:
             rondas_con_pistas.append(ronda_con_pistas)
 
         st.session_state.rondas_con_pistas = rondas_con_pistas
-        st.session_state.parejas = parejas
-        st.session_state.resultados = {}
+        st.experimental_rerun()
 
-    # Mostrar selector de pestañas
+# Mostrar rondas solo si ya se generó el torneo
+if "rondas_con_pistas" in st.session_state and "parejas" in st.session_state:
+    st.success("Parejas asignadas:")
+    for pareja in st.session_state.parejas:
+        st.markdown(f"- {pareja}")
+
     ronda_labels = ["\U0001F3C6 Clasificación"] + [f"R{i+1}" for i in range(len(st.session_state.rondas_con_pistas))]
     selected_tab = st.radio("Selecciona una ronda", ronda_labels, horizontal=True)
 
@@ -123,5 +126,3 @@ if len(jugadores) == num_jugadores:
             with col3:
                 s2 = st.number_input(f"{p2}", min_value=0, max_value=8, key=f"{ronda_idx}_{j}_score2")
             st.session_state.resultados[(p1, p2)] = (s1, s2)
-else:
-    st.warning("Por favor, ingresa todos los jugadores para continuar.")
