@@ -5,22 +5,23 @@ from itertools import combinations
 from fpdf import FPDF
 from io import BytesIO
 
-def generar_rondas(parejas, pistas):
+def generar_rondas_sin_repeticion(parejas, pistas):
     partidos = list(combinations(parejas, 2))
     rondas = []
 
     while partidos:
         ronda = []
-        parejas_en_ronda = set()
+        usadas_en_ronda = set()
         for partido in partidos[:]:
             p1, p2 = partido
-            if p1 not in parejas_en_ronda and p2 not in parejas_en_ronda:
+            if p1 not in usadas_en_ronda and p2 not in usadas_en_ronda:
                 ronda.append(partido)
-                parejas_en_ronda.update([p1, p2])
+                usadas_en_ronda.update([p1, p2])
                 partidos.remove(partido)
                 if len(ronda) == pistas:
                     break
         rondas.append(ronda)
+
     return rondas
 
 st.set_page_config(page_title="Americano Pádel", layout="wide")
@@ -46,7 +47,7 @@ with st.expander("Paso 2: Ingresar nombres de jugadores"):
 if len(jugadores) == num_jugadores and not st.session_state.get("torneo_creado"):
     if st.button("🎾 Crear Torneo"):
         parejas = [f"{jugadores[i]} / {jugadores[i+1]}" for i in range(0, num_jugadores, 2)]
-        rondas = generar_rondas(parejas, pistas)
+        rondas = generar_rondas_sin_repeticion(parejas, pistas)
 
         rondas_con_pistas = []
         for ronda in rondas:
