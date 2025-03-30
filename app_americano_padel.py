@@ -59,6 +59,11 @@ if len(jugadores) == num_jugadores and not st.session_state.get("torneo_creado")
         st.session_state.rondas_con_pistas = rondas_con_pistas
         st.session_state.torneo_creado = True
 
+        # DEBUG - mostrar rondas generadas
+        st.write('Debug - Total de rondas generadas:', len(st.session_state.rondas_con_pistas))
+        for idx, ronda in enumerate(st.session_state.rondas_con_pistas):
+            st.write(f'Ronda {idx + 1}:', ronda)
+
 # Mostrar torneo
 if st.session_state.get("torneo_creado"):
     st.success("Parejas asignadas:")
