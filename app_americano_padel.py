@@ -56,7 +56,7 @@ if len(jugadores) == num_jugadores:
             rondas_con_pistas.append(ronda_con_pistas)
 
         st.session_state.rondas_con_pistas = rondas_con_pistas
-        st.experimental_rerun()
+        st.rerun()
 
 # Mostrar rondas solo si ya se generó el torneo
 if "rondas_con_pistas" in st.session_state and "parejas" in st.session_state:
