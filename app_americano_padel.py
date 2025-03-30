@@ -1,29 +1,30 @@
 
 import streamlit as st
 import pandas as pd
-from itertools import combinations
+from itertools import combinations, permutations
 from fpdf import FPDF
 from io import BytesIO
 
-def generar_rondas_greedy(parejas, pistas):
-    partidos_posibles = list(combinations(parejas, 2))
-    partidos_jugados = set()
-    rondas = []
+def generar_rondas_sin_repeticion(parejas, pistas):
+    partidos = list(combinations(parejas, 2))
+    total_partidos = len(partidos)
+    partidos_por_ronda = pistas
+    max_rondas = total_partidos // partidos_por_ronda + (1 if total_partidos % partidos_por_ronda else 0)
 
-    while len(partidos_jugados) < len(partidos_posibles):
+    rondas = []
+    usados = set()
+
+    while len(usados) < total_partidos:
         ronda = []
         usadas_en_ronda = set()
-
-        for p1, p2 in partidos_posibles:
-            if ((p1, p2) not in partidos_jugados and (p2, p1) not in partidos_jugados and
-                p1 not in usadas_en_ronda and p2 not in usadas_en_ronda):
-                ronda.append((p1, p2))
-                usadas_en_ronda.update([p1, p2])
-                partidos_jugados.add((p1, p2))
-
-                if len(ronda) == pistas:
-                    break
-
+        for p1, p2 in partidos:
+            if (p1, p2) not in usados and (p2, p1) not in usados:
+                if p1 not in usadas_en_ronda and p2 not in usadas_en_ronda:
+                    ronda.append((p1, p2))
+                    usadas_en_ronda.update([p1, p2])
+                    usados.add((p1, p2))
+                    if len(ronda) == pistas:
+                        break
         if ronda:
             rondas.append(ronda)
         else:
@@ -31,15 +32,14 @@ def generar_rondas_greedy(parejas, pistas):
 
     return rondas
 
+# App
 st.set_page_config(page_title="Americano Pádel", layout="wide")
-
 st.sidebar.header("Configuración del Torneo")
 nombre_torneo = st.sidebar.text_input("Nombre del Americano", "Domingo 30 de marzo - 4Winds")
 num_parejas = st.sidebar.number_input("Cantidad de parejas", min_value=2, max_value=20, value=6, step=1)
 pistas = st.sidebar.number_input("Cantidad de pistas disponibles", min_value=1, max_value=10, value=3, step=1)
 
 st.markdown(f"## Torneo: {nombre_torneo}")
-
 num_jugadores = num_parejas * 2
 jugadores = st.session_state.get("jugadores", [])
 
@@ -50,11 +50,10 @@ with st.expander("Paso 2: Ingresar nombres de jugadores"):
             if len(jugadores) < num_jugadores:
                 jugadores.append(st.session_state[f"jugador_{i}"])
 
-# Crear torneo
 if len(jugadores) == num_jugadores and not st.session_state.get("torneo_creado"):
     if st.button("🎾 Crear Torneo"):
         parejas = [f"{jugadores[i]} / {jugadores[i+1]}" for i in range(0, num_jugadores, 2)]
-        rondas = generar_rondas_greedy(parejas, pistas)
+        rondas = generar_rondas_sin_repeticion(parejas, pistas)
 
         rondas_con_pistas = []
         for ronda in rondas:
@@ -101,7 +100,6 @@ if st.session_state.get("torneo_creado"):
         df_tabla = pd.DataFrame.from_dict(tabla, orient="index")
         df_tabla["Diferencia"] = df_tabla["Games Ganados"] - df_tabla["Games Recibidos"]
         df_tabla = df_tabla.sort_values(by=["Games Ganados", "G", "Diferencia"], ascending=False)
-
         st.dataframe(df_tabla)
 
         if st.button("Descargar clasificación en PDF"):
@@ -118,7 +116,6 @@ if st.session_state.get("torneo_creado"):
             pdf_output = pdf.output(dest='S').encode('latin1')
             pdf_buffer.write(pdf_output)
             pdf_buffer.seek(0)
-
             st.success("PDF generado correctamente")
             st.download_button(
                 label="Descargar PDF",
