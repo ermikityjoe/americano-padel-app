@@ -7,7 +7,6 @@ from io import BytesIO
 
 st.set_page_config(page_title="Americano Pádel", layout="wide")
 
-# Paso 1: Información inicial del torneo
 st.sidebar.header("Configuración del Torneo")
 nombre_torneo = st.sidebar.text_input("Nombre del Americano", "Domingo 30 de marzo - 4Winds")
 num_parejas = st.sidebar.number_input("Cantidad de parejas", min_value=2, max_value=20, value=6, step=1)
@@ -31,16 +30,36 @@ if len(jugadores) == num_jugadores:
         st.markdown(f"- {pareja}")
 
     partidos = list(combinations(parejas, 2))
-    total_rondas = (len(partidos) + pistas - 1) // pistas
-    rondas = [[] for _ in range(total_rondas)]
 
-    for idx, partido in enumerate(partidos):
-        ronda_index = idx // pistas
-        rondas[ronda_index].append((partido, (idx % pistas) + 1))
+    rondas = []
+    ronda_actual = []
+    ocupadas = set()
+
+    for partido in partidos:
+        p1, p2 = partido
+        if p1 not in ocupadas and p2 not in ocupadas:
+            ronda_actual.append(partido)
+            ocupadas.update([p1, p2])
+            if len(ronda_actual) == pistas:
+                rondas.append(ronda_actual)
+                ronda_actual = []
+                ocupadas = set()
+
+    if ronda_actual:
+        rondas.append(ronda_actual)
+
+    # Asignar número de pista a cada partido
+    rondas_con_pistas = []
+    for ronda in rondas:
+        ronda_con_pistas = []
+        for i, partido in enumerate(ronda):
+            pista = i + 1
+            ronda_con_pistas.append((partido, pista))
+        rondas_con_pistas.append(ronda_con_pistas)
 
     resultados = {}
 
-    ronda_labels = ["🏆 Clasificación"] + [f"R{i+1}" for i in range(total_rondas)]
+    ronda_labels = ["🏆 Clasificación"] + [f"R{i+1}" for i in range(len(rondas_con_pistas))]
     selected_tab = st.radio("Selecciona una ronda", ronda_labels, horizontal=True)
 
     if selected_tab == "🏆 Clasificación":
@@ -91,7 +110,7 @@ if len(jugadores) == num_jugadores:
     else:
         ronda_idx = int(selected_tab[1:]) - 1
         st.header(f"{selected_tab} - Resultados")
-        for j, ((p1, p2), pista_num) in enumerate(rondas[ronda_idx]):
+        for j, ((p1, p2), pista_num) in enumerate(rondas_con_pistas[ronda_idx]):
             st.markdown(f"#### Pista {pista_num}")
             col1, col2, col3 = st.columns([4, 1, 4])
             with col1:
