@@ -5,22 +5,29 @@ from itertools import combinations
 from fpdf import FPDF
 from io import BytesIO
 
-def generar_rondas_sin_repeticion(parejas, pistas):
-    partidos = list(combinations(parejas, 2))
+def generar_rondas_greedy(parejas, pistas):
+    partidos_posibles = list(combinations(parejas, 2))
+    partidos_jugados = set()
     rondas = []
 
-    while partidos:
+    while len(partidos_jugados) < len(partidos_posibles):
         ronda = []
         usadas_en_ronda = set()
-        for partido in partidos[:]:
-            p1, p2 = partido
-            if p1 not in usadas_en_ronda and p2 not in usadas_en_ronda:
-                ronda.append(partido)
+
+        for p1, p2 in partidos_posibles:
+            if ((p1, p2) not in partidos_jugados and (p2, p1) not in partidos_jugados and
+                p1 not in usadas_en_ronda and p2 not in usadas_en_ronda):
+                ronda.append((p1, p2))
                 usadas_en_ronda.update([p1, p2])
-                partidos.remove(partido)
+                partidos_jugados.add((p1, p2))
+
                 if len(ronda) == pistas:
                     break
-        rondas.append(ronda)
+
+        if ronda:
+            rondas.append(ronda)
+        else:
+            break
 
     return rondas
 
@@ -47,7 +54,7 @@ with st.expander("Paso 2: Ingresar nombres de jugadores"):
 if len(jugadores) == num_jugadores and not st.session_state.get("torneo_creado"):
     if st.button("🎾 Crear Torneo"):
         parejas = [f"{jugadores[i]} / {jugadores[i+1]}" for i in range(0, num_jugadores, 2)]
-        rondas = generar_rondas_sin_repeticion(parejas, pistas)
+        rondas = generar_rondas_greedy(parejas, pistas)
 
         rondas_con_pistas = []
         for ronda in rondas:
