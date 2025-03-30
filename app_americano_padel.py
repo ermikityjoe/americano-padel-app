@@ -44,11 +44,9 @@ if len(jugadores) == num_jugadores:
                 rondas.append(ronda_actual)
                 ronda_actual = []
                 ocupadas = set()
-
     if ronda_actual:
         rondas.append(ronda_actual)
 
-    # Asignar número de pista a cada partido
     rondas_con_pistas = []
     for ronda in rondas:
         ronda_con_pistas = []
@@ -58,7 +56,6 @@ if len(jugadores) == num_jugadores:
         rondas_con_pistas.append(ronda_con_pistas)
 
     resultados = {}
-
     ronda_labels = ["🏆 Clasificación"] + [f"R{i+1}" for i in range(len(rondas_con_pistas))]
     selected_tab = st.radio("Selecciona una ronda", ronda_labels, horizontal=True)
 
@@ -97,7 +94,8 @@ if len(jugadores) == num_jugadores:
                 pdf.cell(200, 10, txt=texto, ln=True)
 
             pdf_buffer = BytesIO()
-            pdf.output(pdf_buffer)
+            pdf_output = pdf.output(dest='S').encode('latin1')
+            pdf_buffer.write(pdf_output)
             pdf_buffer.seek(0)
 
             st.success("PDF generado correctamente")
