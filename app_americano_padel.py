@@ -5,6 +5,24 @@ from itertools import combinations
 from fpdf import FPDF
 from io import BytesIO
 
+def generar_rondas(parejas, pistas):
+    partidos = list(combinations(parejas, 2))
+    rondas = []
+
+    while partidos:
+        ronda = []
+        parejas_en_ronda = set()
+        for partido in partidos[:]:
+            p1, p2 = partido
+            if p1 not in parejas_en_ronda and p2 not in parejas_en_ronda:
+                ronda.append(partido)
+                parejas_en_ronda.update([p1, p2])
+                partidos.remove(partido)
+                if len(ronda) == pistas:
+                    break
+        rondas.append(ronda)
+    return rondas
+
 st.set_page_config(page_title="Americano Pádel", layout="wide")
 
 st.sidebar.header("Configuración del Torneo")
@@ -24,41 +42,11 @@ with st.expander("Paso 2: Ingresar nombres de jugadores"):
             if len(jugadores) < num_jugadores:
                 jugadores.append(st.session_state[f"jugador_{i}"])
 
-# Botón para crear torneo
+# Crear torneo
 if len(jugadores) == num_jugadores and not st.session_state.get("torneo_creado"):
     if st.button("🎾 Crear Torneo"):
         parejas = [f"{jugadores[i]} / {jugadores[i+1]}" for i in range(0, num_jugadores, 2)]
-
-        partidos = list(combinations(parejas, 2))
-        partidos_pendientes = partidos.copy()
-        rondas = []
-
-        while partidos_pendientes:
-            ronda_actual = []
-            usados = set()
-            for partido in partidos_pendientes[:]:
-                p1, p2 = partido
-                if p1 not in usados and p2 not in usados:
-                    ronda_actual.append(partido)
-                    usados.update([p1, p2])
-                    partidos_pendientes.remove(partido)
-                    if len(ronda_actual) == pistas:
-                        break
-
-        ronda_actual = []
-        ocupadas = set()
-
-        for partido in partidos:
-            p1, p2 = partido
-            if p1 not in ocupadas and p2 not in ocupadas:
-                ronda_actual.append(partido)
-                ocupadas.update([p1, p2])
-                if len(ronda_actual) == pistas:
-                    rondas.append(ronda_actual)
-                    ronda_actual = []
-                    ocupadas = set()
-        if ronda_actual:
-            rondas.append(ronda_actual)
+        rondas = generar_rondas(parejas, pistas)
 
         rondas_con_pistas = []
         for ronda in rondas:
@@ -74,16 +62,12 @@ if len(jugadores) == num_jugadores and not st.session_state.get("torneo_creado")
         st.session_state.rondas_con_pistas = rondas_con_pistas
         st.session_state.torneo_creado = True
 
-        # DEBUG - mostrar rondas generadas
-        st.write('Debug - Total de rondas generadas:', len(st.session_state.rondas_con_pistas))
-        for idx, ronda in enumerate(st.session_state.rondas_con_pistas):
-            st.write(f'Ronda {idx + 1}:', ronda)
-
-# Mostrar torneo
 if st.session_state.get("torneo_creado"):
     st.success("Parejas asignadas:")
     for pareja in st.session_state.parejas:
         st.markdown(f"- {pareja}")
+
+    st.markdown(f"**Debug: Total de rondas generadas:** {len(st.session_state.rondas_con_pistas)}")
 
     ronda_labels = ["🏆 Clasificación"] + [f"R{i+1}" for i in range(len(st.session_state.rondas_con_pistas))]
     selected_tab = st.radio("Selecciona una ronda", ronda_labels, horizontal=True)
